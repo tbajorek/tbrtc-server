@@ -1,0 +1,4 @@
+{
+  "Event {ename} is not found in an event's container": "Zdarzenie {ename} nie zostało znalezione w kontenerze zdarzeń",
+  "Detached hander is not found": "Odpinana funkcja obsługi zdarzenia nie została znaleziona"
+}
