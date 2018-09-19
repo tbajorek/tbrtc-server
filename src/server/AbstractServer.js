@@ -1,21 +1,21 @@
-import Intro, { Line } from 'jscon-intro';
+import Intro, {Line} from 'jscon-intro';
 import BadParamType from 'tbrtc-common/exceptions/BadParamType';
-import { Message } from 'tbrtc-common/messages/Message';
-import { Session as SessionMessage } from 'tbrtc-common/messages/Session';
+import {Message} from 'tbrtc-common/messages/Message';
+import {Session as SessionMessage} from 'tbrtc-common/messages/Session';
 import ValueChecker from 'tbrtc-common/utilities/ValueChecker';
-import { Unique as UniqueArray } from 'tbrtc-common/utilities/array/Unique';
+import {Unique as UniqueArray} from 'tbrtc-common/utilities/array/Unique';
 import MessageFactory from 'tbrtc-common/factory/MessageFactory';
-import { User as UserMessage } from 'tbrtc-common/messages/User';
-import { Error as ErrorMessage } from 'tbrtc-common/messages/result/Error';
-import { Success as SuccessMessage } from 'tbrtc-common/messages/result/Success';
+import {User as UserMessage} from 'tbrtc-common/messages/User';
+import {Error as ErrorMessage} from 'tbrtc-common/messages/result/Error';
+import {Success as SuccessMessage} from 'tbrtc-common/messages/result/Success';
 import ClassWithEvents from 'tbrtc-common/event/ClassWithEvents';
 import Event from 'tbrtc-common/event/Event';
 import EventContainer from 'tbrtc-common/event/EventContainer';
 import InMemoryAbstract from '../repository/InMemoryAbstract';
-import { User } from '../model/User';
-import { Session } from '../model/Session';
-import { Auth } from '../service/Auth';
-import { Connection } from '../model/Connection';
+import {User} from '../model/User';
+import {Session} from '../model/Session';
+import {Auth} from '../service/Auth';
+import {Connection} from '../model/Connection';
 
 const uuidv4 = require('uuid');
 const colors = require('colors/safe');
@@ -24,30 +24,36 @@ const colors = require('colors/safe');
  * @module tbrtc-server/server
  */
 
+Message.userModel = User;
+
 /**
  * Abstract signaling server
  */
 class AbstractServer extends ClassWithEvents {
     /**
      * Initialize abstract signaling server
+     *
      * @param {object} config Configuration object
      */
     constructor(config) {
         super();
         /**
          * Session repository
+         *
          * @type {InMemoryAbstract}
          * @protected
          */
         this._sessions = new AbstractServer.SessionRepository();
         /**
          * User repository
+         *
          * @type {InMemoryAbstract}
          * @protected
          */
         this._users = new AbstractServer.UserRepository();
         /**
          * Connection repository
+         *
          * @type {InMemoryAbstract}
          * @protected
          */
@@ -57,26 +63,33 @@ class AbstractServer extends ClassWithEvents {
         }
         /**
          * Server configuration
+         *
          * @type {Object}
          * @protected
          */
         this._config = config;
         /**
          * Optional internal signaling server instance
+         *
          * @type {Object|null}
          * @protected
          */
         this._server = null;
         /**
          * Auth service
+         *
          * @type {Auth}
          * @protected
          */
         this._authService = new AbstractServer.AuthService();
+
+        this.events.on('user.checked.success', this._userCheckedSuccessfull.bind(this));
+        this.events.on('user.checked.failure', this._userCheckedUnsuccessfull.bind(this));
     }
 
     /**
      * Return built-in events
+     *
      * @returns {string[]} Built-in events
      */
     get builtInEvents() {
@@ -89,15 +102,17 @@ class AbstractServer extends ClassWithEvents {
             'session.created',
             'session.requested.before',
             'session.requested',
-            'session.stopped',
+            'session.request.stopped',
             'session.joined',
             'session.rejected',
             'session.left',
-            'session.disconnected',
             'session.closed',
             'user.checked',
+            'user.checked.success',
+            'user.checked.failure',
             'user.connected',
             'user.disconnected',
+            'user.communication',
             'message.received',
             'message.sent',
         ];
@@ -111,7 +126,7 @@ class AbstractServer extends ClassWithEvents {
             this._server = this._getServer();
         }
         this._displayIntro();
-        this.dispatch('server.started', { server: this._server });
+        this.dispatch('server.started', {server: this._server});
     }
 
     /**
@@ -123,10 +138,11 @@ class AbstractServer extends ClassWithEvents {
 
     /**
      * Send a message to all connected users
+     *
      * @param {Message} message Message object
      */
     sendToAll(message) {
-        ValueChecker.check({ message }, {
+        ValueChecker.check({message}, {
             message: {
                 required: true,
                 instanceof: Message,
@@ -137,11 +153,12 @@ class AbstractServer extends ClassWithEvents {
 
     /**
      * Send a message to all users who joined to specified sessions
+     *
      * @param {Message} message Message to be sent
      * @param {Session[]} sessions Array of session objects
      */
     sendToSessions(message, sessions = []) {
-        ValueChecker.check({ sessions, message }, {
+        ValueChecker.check({sessions, message}, {
             sessions: {
                 typeof: 'array',
                 elements: {
@@ -166,6 +183,7 @@ class AbstractServer extends ClassWithEvents {
 
     /**
      * Send message to specified users
+     *
      * @param {Message} message Message to be sent
      * @param {User[]} users Array of users
      */
@@ -173,7 +191,7 @@ class AbstractServer extends ClassWithEvents {
         if (!Array.isArray(users)) {
             users = [users];
         }
-        ValueChecker.check({ users, message }, {
+        ValueChecker.check({users, message}, {
             users: {
                 typeof: 'array',
                 elements: {
@@ -211,23 +229,23 @@ class AbstractServer extends ClassWithEvents {
 
     /**
      * Produce Message object from JSON data. Event 'message.received' is dispatched.
+     *
      * @param {Object} jsonMessage JSON object with message data
      * @protected
      */
     _receiveMessage(jsonMessage, connection) {
         const message = MessageFactory.createFromJson(jsonMessage);
-        this.dispatch('message.received', { message });
+        this.dispatch('message.received', {message});
         if (message.type === 'user.connect') {
-            return this._userConnect(User.fromParent(message.user), connection);
+            return this._userChecked(message, User.fromParent(message.user), connection);
         }
-        console.log(message);
         if (typeof message.user !== 'object' || message.user === null) {
             this._send(
                 connection,
                 new ErrorMessage(
                     ErrorMessage.codes.USER_NOT_FOUND,
                     null,
-                    { uname: '<undefined>' },
+                    {uname: '<undefined>'},
                 ),
             );
             return null;
@@ -239,38 +257,47 @@ class AbstractServer extends ClassWithEvents {
                 new ErrorMessage(
                     ErrorMessage.codes.USER_NOT_FOUND,
                     null,
-                    { uname: message.user.name },
+                    {uname: message.user.name},
                 ),
             );
             return null;
         }
         switch (message.type) {
-        case 'session.new':
-            this._sessionNew(user, connection);
-            break;
-        case 'session.request':
-            this._sessionRequest(message, user, connection);
-            break;
-        case 'session.stop':
-            this._sessionStop(message.sessionId, user, connection);
-            break;
-        case 'session.confirm':
-            this._sessionConfirm(message.sessionId, user, connection);
-            break;
-        case 'session.reject':
-            this._sessionReject(message.sessionId, user, connection);
-            break;
-        case 'sdp.transfer':
-            this._sdpReceived(message, connection);
-            break;
-        case 'ice.candidate':
-            this._iceReceived(message, connection);
-            break;
-        case 'session.leave':
-            this._sessionLeave(message.sessionId, user, connection);
-            break;
-        default:
-            break;
+            case 'session.new':
+                this._sessionNew(user, connection);
+                break;
+            case 'session.request':
+                this._sessionRequest(message, user, connection);
+                break;
+            case 'session.stop':
+                this._sessionStop(message.sessionId, user, connection);
+                break;
+            case 'session.confirm':
+                this._sessionConfirm(message.sessionId, user, connection);
+                break;
+            case 'session.reject':
+                this._sessionReject(message, user, connection);
+                break;
+            case 'sdp.transfer':
+                this._sdpReceived(message, user, connection);
+                break;
+            case 'ice.candidate':
+                this._iceReceived(message, user, connection);
+                break;
+            case 'chat.message':
+                this._chatMessage(message, connection);
+                break;
+            case 'session.leave':
+                this._sessionLeave(message.sessionId, user, connection);
+                break;
+            case 'session.close':
+                this._sessionClose(message.sessionId, user, connection);
+                break;
+            case 'user.communication':
+                this._userCommunication(message, user);
+                break;
+            default:
+                break;
         }
         return true;
     }
@@ -284,8 +311,8 @@ class AbstractServer extends ClassWithEvents {
     _connectionOpened(connection, request) {
         const connectionModel = new Connection(this._getNewIdentifier(), connection, request);
         this._connections.add(connectionModel);
-        this.dispatch('connection.opened', { connection: connectionModel });
-        const user = new User(this._getNewIdentifier());
+        this.dispatch('connection.opened', {connection: connectionModel});
+        const user = new User(null);
         user.connectionId = connectionModel.id;
         const message = new UserMessage('user.init', user);
         this._send(connection, message);
@@ -300,38 +327,54 @@ class AbstractServer extends ClassWithEvents {
      * @param sourceConnection
      * @protected
      */
-    _userConnect(user, sourceConnection) {
-        const { checked, message } = this.dispatch('user.checked', {
-            checked: true,
-            message: null,
+    _userChecked(originalMessage, user, sourceConnection) {
+        this.dispatch('user.checked', {
+            message: originalMessage,
+            user,
+            sourceConnection
         });
-        if (checked) {
-            const connection = this._connections.get(user.connectionId);
-            if (connection === null) {
-                this._send(
-                    sourceConnection,
-                    new ErrorMessage(
-                        ErrorMessage.codes.CONN_NOT_FOUND,
-                        null,
-                        { connid: user.connectionId },
-                    ),
-                );
-                return;
-            }
-            connection.user = user;
-            this.users.add(user);
-            this._connections.update(connection);
-            this.dispatch(
-                'user.connected',
-                { user },
-            );
-            this.sendToUsers(new SuccessMessage('User {uname} has been connected', null, { uname: user.name, user }), user);
-        } else {
-            if (message !== null) {
-                this.sendToUsers(message, user);
-            }
-            this._userDisonnect(user);
+        if(!this.events.event('user.checked').handlers.length) {
+            this.dispatch('user.checked.success', {
+                message: originalMessage,
+                user,
+                sourceConnection
+            });
         }
+    }
+
+    _userCheckedSuccessfull(e) {
+        const {user, sourceConnection, message} = e.data;
+        const connection = this._connections.get(user.connectionId);
+        if (connection === null) {
+            this._send(
+                sourceConnection,
+                new ErrorMessage(
+                    ErrorMessage.codes.CONN_NOT_FOUND,
+                    null,
+                    {connid: user.connectionId},
+                ),
+            );
+            return;
+        }
+        connection.user = user;
+        this.users.add(user);
+        this._connections.update(connection);
+        this.dispatch(
+            'user.connected',
+            {user, message},
+        );
+        this.sendToUsers(new SuccessMessage('User {uname} has been connected', null, {
+            uname: user.name,
+            user
+        }), user);
+    }
+
+    _userCheckedUnsuccessfull(e) {
+        const { messageData, user, sourceConnection } = e.data;
+        if(!!messageData) {
+            this._send(sourceConnection, new ErrorMessage(messageData.code, null, messageData.details));
+        }
+        this._userDisonnect(user, sourceConnection, false);
     }
 
     /**
@@ -341,7 +384,7 @@ class AbstractServer extends ClassWithEvents {
      */
     _sessionNew(user, sourceConnection) {
         const session = new Session(this._getNewIdentifier(), user);
-        const { checked, message } = this.dispatch('session.checked', {
+        const {checked, message} = this.dispatch('session.checked', {
             user,
             checked: true,
             message: null,
@@ -352,7 +395,7 @@ class AbstractServer extends ClassWithEvents {
             this.sendToUsers(new SessionMessage('session.new', session.id, user), user);
             this.dispatch(
                 'session.created',
-                { session },
+                {session},
             );
         } else if (message !== null) {
             this.sendToUsers(message, user);
@@ -369,7 +412,7 @@ class AbstractServer extends ClassWithEvents {
         if (session === null) {
             return;
         }
-        const { checked, message } = this.dispatch('session.requested.before', {
+        const {checked, message} = this.dispatch('session.requested.before', {
             user,
             session,
             checked: true,
@@ -380,34 +423,34 @@ class AbstractServer extends ClassWithEvents {
                 session.newRequest(user);
                 this.sessions.update(session);
                 switch (this.config.confirmType) {
-                case 'creator':
-                    this.sendToUsers(sessionMessage, session.creator);
-                    this.dispatch(
-                        'session.requested',
-                        { session },
-                    );
-                    break;
-                case 'members':
-                    this.sendToUsers(sessionMessage, session.members);
-                    this.dispatch(
-                        'session.requested',
-                        { session },
-                    );
-                    break;
-                default:
-                    this.dispatch(
-                        'session.requested',
-                        { session },
-                    );
-                    // auto-confirm
-                    this._sessionConfirm(session.id, user.id, sourceConnection);
+                    case 'creator':
+                        this.sendToUsers(sessionMessage, session.creator);
+                        this.dispatch(
+                            'session.requested',
+                            {session},
+                        );
+                        break;
+                    case 'members':
+                        this.sendToUsers(sessionMessage, session.members);
+                        this.dispatch(
+                            'session.requested',
+                            {session},
+                        );
+                        break;
+                    default:
+                        this.dispatch(
+                            'session.requested',
+                            {session},
+                        );
+                        // auto-confirm
+                        this._sessionConfirm(session.id, user.id, sourceConnection);
                 }
             } else {
                 this.sendToUsers(
                     new ErrorMessage(
                         ErrorMessage.codes.DOUBLE_SESS_MEMB,
                         null,
-                        { uname: user.name, sessid: session.id },
+                        {uname: user.name, sessid: session.id},
                     ),
                     user,
                 );
@@ -425,7 +468,7 @@ class AbstractServer extends ClassWithEvents {
                 new ErrorMessage(
                     ErrorMessage.codes.SESS_NOT_FOUND,
                     null,
-                    { sessid: sessionId },
+                    {sessid: sessionId},
                 ),
             );
             return;
@@ -436,7 +479,7 @@ class AbstractServer extends ClassWithEvents {
                 new ErrorMessage(
                     ErrorMessage.codes.REQ_NOT_FOUND,
                     null,
-                    { uname: user.name },
+                    {uname: user.name},
                 ),
             );
             return;
@@ -452,28 +495,40 @@ class AbstractServer extends ClassWithEvents {
         this.users.update(member);
         this.dispatch(
             'session.joined',
-            { session, user },
+            {session, user},
         );
         this.sendToUsers(
-            new SessionMessage('session.data', sessionId, null, { session }),
+            new SessionMessage('session.data', sessionId, null, {session}),
             user,
         );
     }
 
-    _sessionReject(sessionId, user, sourceConnection) {
+    _sessionReject(message, user, sourceConnection) {
+        const {sessionId, data} = message;
         const session = this._findSession(sessionId, sourceConnection);
         if (session === null) {
+            return;
+        }
+        if (!session.hasRequest(user)) {
+            this._send(
+                sourceConnection,
+                new ErrorMessage(
+                    ErrorMessage.codes.REQ_NOT_FOUND,
+                    null,
+                    {uname: user.name},
+                ),
+            );
             return;
         }
         session.removeRequest(user);
         this.sessions.update(session);
         this.sendToUsers(
-            new SessionMessage('session.reject', sessionId, user),
+            message,
             user,
         );
         this.dispatch(
             'session.rejected',
-            { session, user },
+            {session, user},
         );
     }
 
@@ -484,17 +539,24 @@ class AbstractServer extends ClassWithEvents {
         }
         session.removeRequest(user);
         this.sessions.update(session);
+        const message = new SessionMessage('session.stop', sessionId, user);
+        // notify members of session
         this.sendToUsers(
-            new SessionMessage('session.stop', sessionId, user),
+            message,
+            session.members,
+        );
+        // return information back
+        this.sendToUsers(
+            message,
             user,
         );
         this.dispatch(
-            'session.stopped',
-            { session, user },
+            'session.request.stopped',
+            {session, user},
         );
     }
 
-    _sdpReceived(message, sourceConnection) {
+    _sdpReceived(message, user, sourceConnection) {
         const session = this.sessions.get(message.sessionId);
         if (session === null) {
             this._send(
@@ -502,15 +564,15 @@ class AbstractServer extends ClassWithEvents {
                 new ErrorMessage(
                     ErrorMessage.codes.SESS_NOT_FOUND,
                     null,
-                    { sessid: message.sessionId },
+                    {sessid: message.sessionId},
                 ),
             );
             return;
         }
-        this.sendToUsers(message, session.members);
+        this.sendToUsers(message, user);
     }
 
-    _iceReceived(message, sourceConnection) {
+    _iceReceived(message, user, sourceConnection) {
         const session = this.sessions.get(message.sessionId);
         if (session === null) {
             this._send(
@@ -518,7 +580,23 @@ class AbstractServer extends ClassWithEvents {
                 new ErrorMessage(
                     ErrorMessage.codes.SESS_NOT_FOUND,
                     null,
-                    { sessid: message.sessionId },
+                    {sessid: message.sessionId},
+                ),
+            );
+            return;
+        }
+        this.sendToUsers(message, user);
+    }
+
+    _chatMessage(message, sourceConnection) {
+        const session = this.sessions.get(message.sessionId);
+        if (session === null) {
+            this._send(
+                sourceConnection,
+                new ErrorMessage(
+                    ErrorMessage.codes.SESS_NOT_FOUND,
+                    null,
+                    {sessid: message.sessionId},
                 ),
             );
             return;
@@ -526,7 +604,7 @@ class AbstractServer extends ClassWithEvents {
         this.sendToUsers(message, session.members);
     }
 
-    _sessionLeave(sessionId, user, sourceConnection, messageType = 'session.leave') {
+    _sessionLeave(sessionId, user, sourceConnection, closing = true) {
         const session = this._findSession(sessionId, sourceConnection);
         if (session === null) {
             return;
@@ -535,24 +613,17 @@ class AbstractServer extends ClassWithEvents {
 
         // normal user
         this.sendToUsers(
-            new SessionMessage(messageType, sessionId, user),
+            new SessionMessage('session.leave', sessionId, user),
             members,
         );
         const member = session.leave(user.id);
         this.sessions.update(session);
         this.users.update(member);
-        if (messageType === 'session.disconnect') {
-            this.dispatch(
-                'session.disconnected',
-                { session, user },
-            );
-        } else {
-            this.dispatch(
-                'session.left',
-                { session, user },
-            );
-        }
-        if (session.isCreator(user)) {
+        this.dispatch(
+            'session.left',
+            {session, user},
+        );
+        if (closing && session.isCreator(user)) {
             // creator user
             this._sessionClose(sessionId, user, sourceConnection);
         }
@@ -565,19 +636,34 @@ class AbstractServer extends ClassWithEvents {
         }
         if (user.id !== session.creator.id) {
             this.sendToUsers(
-                ErrorMessage.codes.PERM_REQ,
-                null,
-                { uname: user.name, sessionId, aname: 'session.close' },
+                new ErrorMessage(
+                    ErrorMessage.codes.PERM_REQ,
+                    null,
+                    {uname: user.name, sessionId, aname: 'session.close'}
+                ), user
             );
+            return;
         }
         const members = session.members.slice();
+        this.sendToUsers(
+            new SessionMessage('session.close', sessionId, user),
+            members,
+        );
         for (const member of members) {
-            this._sessionLeave(sessionId, member);
+            this._sessionLeave(sessionId, member, sourceConnection, false);
         }
         this.sessions.remove(session);
         this.dispatch(
             'session.closed',
-            { session },
+            {session},
+        );
+    }
+
+    _userCommunication(message, user) {
+        this.sendToUsers(message, user);
+        this.dispatch(
+            'user.communication',
+            {message, user},
         );
     }
 
@@ -596,7 +682,7 @@ class AbstractServer extends ClassWithEvents {
                 new ErrorMessage(
                     ErrorMessage.codes.SESS_NOT_FOUND,
                     null,
-                    { sessid: sessionId },
+                    {sessid: sessionId},
                 ),
             );
         }
@@ -607,18 +693,19 @@ class AbstractServer extends ClassWithEvents {
      *
      * @param {User} user
      * @param sourceConnection
+     * @param initialized
      * @protected
      */
-    _userDisonnect(user, sourceConnection = null) {
+    _userDisonnect(user, sourceConnection = null, initialized = true) {
         const foundUser = this.users.get(user);
         if (foundUser === null) {
-            if (sourceConnection !== null) {
+            if (sourceConnection !== null && initialized) {
                 this._send(
                     sourceConnection,
                     new ErrorMessage(
                         ErrorMessage.codes.USER_NOT_FOUND,
                         null,
-                        { uname: { uname: user.id } },
+                        {uname: {uname: user.id}},
                     ),
                 );
                 return;
@@ -628,14 +715,21 @@ class AbstractServer extends ClassWithEvents {
         for (const session of user.sessions) {
             this._sessionLeave(session.id, user, sourceConnection, 'session.disconnect');
         }
+        const connection = this._connections.get(user.connectionId);
         this.users.remove(user);
+        this._connections.remove(connection);
+        if(connection !== null) {
+            connection.original.close();
+        } else if(sourceConnection !== null) {
+            sourceConnection.close();
+        }
         this.dispatch('user.disconnected', {
             user,
         });
     }
 
     _userLost(user) {
-        const { connection } = user;
+        const {connection} = user;
         for (const session of user.sessions) {
             this._sessionLeave(session.id, user, connection, 'session.disconnect');
         }
@@ -668,7 +762,7 @@ class AbstractServer extends ClassWithEvents {
      * @protected
      */
     _sendMessage(message, user) {
-        ValueChecker.check({ user, message }, {
+        ValueChecker.check({user, message}, {
             user: {
                 instanceof: User,
                 required: true,
@@ -679,7 +773,7 @@ class AbstractServer extends ClassWithEvents {
             },
         });
         this._send(user.connection, message);
-        this.dispatch('message.sent', { message, user });
+        this.dispatch('message.sent', {message, user});
     }
 
     /**
@@ -714,7 +808,7 @@ class AbstractServer extends ClassWithEvents {
     }
 
     dispatch(eventName, params) {
-        return this.dispatch(eventName, { ...params, server: this });
+        return super.dispatch(eventName, {...params, server: this});
     }
 
     _getServer() {

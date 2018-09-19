@@ -1,7 +1,6 @@
 import _ from 'underscore';
 
 const uuidv4 = require('uuid/v4');
-require('babel-polyfill');
 
 /**
  * @module tbrtc-server/repository
@@ -66,7 +65,7 @@ class InMemoryAbstract
     }
 
     _findInStorage(objectId, key = 'id') {
-        if (typeof objectId === 'object' && key in objectId) {
+        if (objectId !== null && typeof objectId === 'object' && key in objectId) {
             objectId = objectId[key];
         }
         const foundIndex = _.findIndex(this._data, elem => elem[key] === objectId);

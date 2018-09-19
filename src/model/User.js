@@ -6,10 +6,12 @@ import { Unique as UniqueArray } from 'tbrtc-common/utilities/array/Unique';
  */
 
 export class User extends UserParent {
-    constructor(id, name = null, email = null, connectionId = null) {
-        super(id, name, email, connectionId);
+    constructor(id, name = null, surname=null, email = null, avatar = null, connectionId = null) {
+        super(id, name, surname, email, avatar, connectionId);
         this._connection = null;
         this._sessions = new UniqueArray();
+        this._token = null;
+        this._securedFields = ['token'];
     }
 
     _setRepository(repository) {
@@ -37,6 +39,10 @@ export class User extends UserParent {
         return this._sessions;
     }
 
+    get token() {
+        return this._token;
+    }
+
     joinSession(session) {
         this._sessions.push(session);
     }
@@ -55,16 +61,27 @@ export class User extends UserParent {
         }
     }
 
+    static fromJSON(input) {
+        let object = super.fromJSON(input);
+        if(!!input.token) {
+            object._token = input.token;
+        }
+        console.log(input);
+        return object;
+    }
+
     static fromParent(parentModel) {
         return new User(
             parentModel.id,
             parentModel.name,
+            parentModel.surname,
             parentModel.email,
+            parentModel.avatar,
             parentModel.connectionId,
         );
     }
 
     static _createEmpty() {
-        return new User(null, null, null, null);
+        return new User(null);
     }
 }
