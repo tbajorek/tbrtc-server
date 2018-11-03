@@ -107,6 +107,8 @@ class AbstractServer extends ClassWithEvents {
             'session.rejected',
             'session.left',
             'session.closed',
+            'sdp.received',
+            'ice.received',
             'user.checked',
             'user.checked.success',
             'user.checked.failure',
@@ -569,6 +571,7 @@ class AbstractServer extends ClassWithEvents {
             );
             return;
         }
+        this.dispatch('sdp.received', {sdp: message.sdp});
         this.sendToUsers(message, user);
     }
 
@@ -585,6 +588,7 @@ class AbstractServer extends ClassWithEvents {
             );
             return;
         }
+        this.dispatch('ice.received', {ice: message.ice});
         this.sendToUsers(message, user);
     }
 
