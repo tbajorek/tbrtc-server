@@ -614,15 +614,14 @@ class AbstractServer extends ClassWithEvents {
             return;
         }
         const members = session.members.slice();
-
+        const member = session.leave(user.id);
+        this.sessions.update(session);
+        this.users.update(member);
         // normal user
         this.sendToUsers(
             new SessionMessage('session.leave', sessionId, user),
             members,
         );
-        const member = session.leave(user.id);
-        this.sessions.update(session);
-        this.users.update(member);
         this.dispatch(
             'session.left',
             {session, user},
