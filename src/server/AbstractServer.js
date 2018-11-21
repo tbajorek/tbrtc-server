@@ -376,7 +376,7 @@ class AbstractServer extends ClassWithEvents {
         if(!!messageData) {
             this._send(sourceConnection, new ErrorMessage(messageData.code, null, messageData.details));
         }
-        this._userDisonnect(user, sourceConnection, false);
+        this._userDisconnect(user, sourceConnection, false);
     }
 
     /**
@@ -699,7 +699,7 @@ class AbstractServer extends ClassWithEvents {
      * @param initialized
      * @protected
      */
-    _userDisonnect(user, sourceConnection = null, initialized = true) {
+    _userDisconnect(user, sourceConnection = null, initialized = true) {
         const foundUser = this.users.get(user);
         if (foundUser === null) {
             if (sourceConnection !== null && initialized) {
@@ -751,7 +751,7 @@ class AbstractServer extends ClassWithEvents {
     _connectionClosed(connectionId) {
         const foundUser = this.users.get(connectionId, 'connectionId');
         if (foundUser !== null) {
-            this._userDisonnect(foundUser);
+            this._userDisconnect(foundUser);
         }
         this.dispatch('connection.closed', {
             connectionId,
