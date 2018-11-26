@@ -21,24 +21,24 @@ class InMemoryAbstract
         return this.get(objectId) === null;
     }
 
-    add(object) {
+    add(object, key = 'id') {
         if (typeof object !== 'object') {
             object = {};
         }
         // object id is empty
-        if(object.id === null) {
-            object.id = this._generateId();
+        if(object[key] === null) {
+            object[key] = this._generateId();
         }
         this._bindWithRepository(object);
         this._data.push(object);
     }
 
-    update(object) {
+    update(object, key = 'id') {
         if (typeof object === 'object') {
-            if (object.id === null) {
-                this.add(object);
+            if (object[key] === null) {
+                this.add(object, key);
             } else {
-                const foundIndex = this._findInStorage(object);
+                const foundIndex = this._findInStorage(object, key);
                 if (foundIndex !== null) {
                     this._bindWithRepository(object);
                     this._data[foundIndex] = object;
@@ -49,8 +49,8 @@ class InMemoryAbstract
         }
     }
 
-    remove(object) {
-        const foundIndex = this._findInStorage(object);
+    remove(object, , key = 'id') {
+        const foundIndex = this._findInStorage(object, key);
         if (foundIndex !== null) {
             this._data.splice(foundIndex, 1);
         }
