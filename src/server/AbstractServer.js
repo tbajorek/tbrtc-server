@@ -330,14 +330,19 @@ class AbstractServer extends ClassWithEvents {
      * @protected
      */
     _userChecked(originalMessage, user, sourceConnection) {
-        this.dispatch('user.checked', {
-            message: originalMessage,
+        const {checked, message} = this.dispatch('user.checked', {
             user,
-            sourceConnection
+            checked: true,
+            message: Message._createEmpty(),
         });
-        if(!this.events.event('user.checked').handlers.length) {
+        if(!this.events.event('user.checked').handlers.length || checked) {
             this.dispatch('user.checked.success', {
-                message: originalMessage,
+                user,
+                sourceConnection
+            });
+        } else {
+            this.dispatch('user.checked.failure', {
+                message,
                 user,
                 sourceConnection
             });
@@ -345,7 +350,7 @@ class AbstractServer extends ClassWithEvents {
     }
 
     _userCheckedSuccessfull(e) {
-        const {user, sourceConnection, message} = e.data;
+        const {user, sourceConnection} = e.data;
         const connection = this._connections.get(user.connectionId);
         if (connection === null) {
             this._send(
@@ -363,7 +368,7 @@ class AbstractServer extends ClassWithEvents {
         this._connections.update(connection);
         this.dispatch(
             'user.connected',
-            {user, message},
+            {user},
         );
         this.sendToUsers(new SuccessMessage('User {uname} has been connected', null, {
             uname: user.name,
