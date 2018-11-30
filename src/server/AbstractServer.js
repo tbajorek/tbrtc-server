@@ -429,20 +429,20 @@ class AbstractServer extends ClassWithEvents {
                         this.sendToUsers(sessionMessage, session.creator);
                         this.dispatch(
                             'session.requested',
-                            {session},
+                            {session, user},
                         );
                         break;
                     case 'members':
                         this.sendToUsers(sessionMessage, session.members);
                         this.dispatch(
                             'session.requested',
-                            {session},
+                            {session, user},
                         );
                         break;
                     default:
                         this.dispatch(
                             'session.requested',
-                            {session},
+                            {session, user},
                         );
                         // auto-confirm
                         this._sessionConfirm(session.id, user.id, sourceConnection);
