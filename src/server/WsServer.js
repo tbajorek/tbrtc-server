@@ -23,6 +23,9 @@ class WsServer extends AbstractServer {
         if(typeof config.ip === 'undefined') {
             config.ip = '0.0.0.0';
         }
+        if(typeof config.port === 'undefined') {
+            config.port = 9876;
+        }
         super(config);
     }
 
