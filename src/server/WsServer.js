@@ -110,7 +110,7 @@ class WsServer extends AbstractServer {
     }
 
     _send(connection, message) {
-        if(connection !== null && connection.readyState === connection.OPEN) {
+        if(!!connection && connection.readyState === connection.OPEN) {
             connection.send(message.toString());
         }
     }
