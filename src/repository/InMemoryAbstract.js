@@ -49,7 +49,7 @@ class InMemoryAbstract
         }
     }
 
-    remove(object, , key = 'id') {
+    remove(object, key = 'id') {
         const foundIndex = this._findInStorage(object, key);
         if (foundIndex !== null) {
             this._data.splice(foundIndex, 1);
