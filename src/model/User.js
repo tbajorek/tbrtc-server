@@ -71,7 +71,7 @@ export class User extends UserParent {
     }
 
     static fromParent(parentModel) {
-        return new User(
+        const user = new User(
             parentModel.id,
             parentModel.name,
             parentModel.surname,
@@ -79,6 +79,8 @@ export class User extends UserParent {
             parentModel.avatar,
             parentModel.connectionId,
         );
+        user._token = parentModel.token;
+        return user;
     }
 
     static _createEmpty() {
