@@ -330,21 +330,17 @@ class AbstractServer extends ClassWithEvents {
      * @protected
      */
     _userChecked(originalMessage, user, sourceConnection) {
-        const {checked, message} = this.dispatch('user.checked', {
+        this.dispatch('user.checked', {
             user,
             checked: true,
             message: Message._createEmpty(),
+            sourceConnection
         });
-        if(!this.events.event('user.checked').handlers.length || checked) {
+        if(!this.events.event('user.checked').handlers.length) {
             this.dispatch('user.checked.success', {
                 user,
-                sourceConnection
-            });
-        } else {
-            this.dispatch('user.checked.failure', {
-                message,
-                user,
-                sourceConnection
+                sourceConnection,
+                message: Message._createEmpty(),
             });
         }
     }
