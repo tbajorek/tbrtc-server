@@ -66,7 +66,6 @@ export class User extends UserParent {
         if(!!input.token) {
             object._token = input.token;
         }
-        console.log(input);
         return object;
     }
 
