@@ -1,1 +1,10 @@
+.idea
 node_modules
+.nyc_output
+*.log
+build
+doc
+yarn-error.log
+test
+build
+mocked_client
