@@ -4152,9 +4152,9 @@ tar@^4:
     safe-buffer "^5.1.2"
     yallist "^3.0.2"
 
-tbrtc-common@^0.0.4:
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/tbrtc-common/-/tbrtc-common-0.0.4.tgz#4f225fcb45b24aaf72cbec9733df330cbbbde0f3"
+tbrtc-common@^0.2.1:
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/tbrtc-common/-/tbrtc-common-0.2.1.tgz#b6c3d6be090a559f4516d88cb1a078f43b76079d"
   dependencies:
     app-root-path "^2.0.1"
     babel-loader "^7.1.4"
