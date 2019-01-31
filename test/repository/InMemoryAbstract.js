@@ -1,4 +1,4 @@
-import {InMemoryAbstract} from "../../src/repository/InMemoryAbstract";
+import InMemoryAbstract from "../../src/repository/InMemoryAbstract";
 
 var assert = require('assert');
 

@@ -32,6 +32,9 @@ const config = {
                         ],
                     },
                 },
+                include: [
+                    '/node_modules/tbrtc-common',
+                ],
             },
         ],
     },

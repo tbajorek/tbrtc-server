@@ -9,12 +9,10 @@ import {User as UserMessage} from 'tbrtc-common/messages/User';
 import {Error as ErrorMessage} from 'tbrtc-common/messages/result/Error';
 import {Success as SuccessMessage} from 'tbrtc-common/messages/result/Success';
 import ClassWithEvents from 'tbrtc-common/event/ClassWithEvents';
-import Event from 'tbrtc-common/event/Event';
 import EventContainer from 'tbrtc-common/event/EventContainer';
 import InMemoryAbstract from '../repository/InMemoryAbstract';
 import {User} from '../model/User';
 import {Session} from '../model/Session';
-import {Auth} from '../service/Auth';
 import {Connection} from '../model/Connection';
 
 const uuidv4 = require('uuid');
@@ -75,13 +73,6 @@ class AbstractServer extends ClassWithEvents {
          * @protected
          */
         this._server = null;
-        /**
-         * Auth service
-         *
-         * @type {Auth}
-         * @protected
-         */
-        this._authService = new AbstractServer.AuthService();
 
         this.events.on('user.checked.success', this._userCheckedSuccessfull.bind(this));
         this.events.on('user.checked.failure', this._userCheckedUnsuccessfull.bind(this));
@@ -233,6 +224,7 @@ class AbstractServer extends ClassWithEvents {
      * Produce Message object from JSON data. Event 'message.received' is dispatched.
      *
      * @param {Object} jsonMessage JSON object with message data
+     * @param connection
      * @protected
      */
     _receiveMessage(jsonMessage, connection) {
@@ -325,6 +317,7 @@ class AbstractServer extends ClassWithEvents {
 
     /**
      *
+     * @param originalMessage
      * @param {User} user
      * @param sourceConnection
      * @protected
@@ -446,7 +439,7 @@ class AbstractServer extends ClassWithEvents {
                             {session, user},
                         );
                         // auto-confirm
-                        this._sessionConfirm(session.id, user.id, sourceConnection);
+                        this._sessionConfirm(session.id, user, sourceConnection);
                 }
             } else {
                 this.sendToUsers(
@@ -845,10 +838,5 @@ AbstractServer.UserRepository = InMemoryAbstract;
  * @type {InMemoryAbstract}
  */
 AbstractServer.ConnectionRepository = InMemoryAbstract;
-/**
- * Set used auth service
- * @type {Auth}
- */
-AbstractServer.AuthService = Auth;
 
 export default AbstractServer;

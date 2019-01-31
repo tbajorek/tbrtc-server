@@ -48,7 +48,7 @@ export class User extends UserParent {
     }
 
     leaveSession(session) {
-        this._sessions.remove(session);
+        this._sessions.remove(session.id);
     }
 
     get connectionId() {

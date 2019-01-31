@@ -1,5 +1,6 @@
 import { Session as SessionParent } from 'tbrtc-common/model/Session';
 import { Unique } from 'tbrtc-common/utilities/array/Unique';
+import {User} from "./User";
 
 /**
  * @module tbrtc-server/model
@@ -26,7 +27,11 @@ export class Session extends SessionParent {
     }
 
     hasRequest(user) {
-        return this._requests.get(user.id) !== null;
+        if(user === null) {
+            return false;
+        }
+        const userId = (typeof user === 'object' && 'id' in user) ? user.id : user;
+        return this._requests.get(userId) !== null;
     }
 
     removeRequest(user) {
@@ -68,5 +73,22 @@ export class Session extends SessionParent {
 
     static _createEmpty() {
         return new Session(null, null);
+    }
+
+    /**
+     * It deserializes JSON input object to model
+     *
+     * @param {object} input Object serialized as JSON
+     * @return {Session}
+     */
+    static fromJSON(input) {
+        const object = super.fromJSON(input);
+        object.creator = User.fromJSON(object.creator);
+        const members = [];
+        object.members.forEach(function (elem) {
+            members.push(User.fromJSON(elem));
+        });
+        object._members = members;
+        return object;
     }
 }

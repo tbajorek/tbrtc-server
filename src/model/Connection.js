@@ -53,6 +53,10 @@ export class Connection extends AbstractModel {
         value._setConnection(this);
     }
 
+    set id(value) {
+        this._id = value;
+    }
+
     send(message) {
         if (this.original !== null && this.original.readyState === this.original.OPEN) {
             return this.original.send(message);

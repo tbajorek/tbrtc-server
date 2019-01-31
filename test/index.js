@@ -17,6 +17,7 @@ server.on('user.checked', (e) => {
     console.log('user.checked');
     //e.data.checked = false;
     //e.data.message = new Error(10, `User ${e.data.user.name} is not authorized`);
+    server.dispatch('user.checked.success', e.data);
     return e;
 });
 server.on('user.connected', (e) => {
